@@ -1,6 +1,6 @@
+using System;
 using System.Net;
 using System.Net.Http;
-using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -36,12 +36,48 @@ app.MapGet("/todos", async (HttpContext http, TodoService service) =>
     await http.Response.WriteAsJsonAsync(items);
 });
 
-app.MapPost("/todos", async (HttpContext http, TodoService service) =>
+app.MapGet("/todos/{id}", async (HttpContext http, TodoService service) =>
 {
-    var dto = await http.Request.ReadFromJsonAsync<TodoDto>();
-    
-    var item = await service.CreateAsync(dto);
+    http.Request.RouteValues.TryGetValue("id", out var id);
+    var item = await service.GetByIdAsync(id.ToString());  
 
     await http.Response.WriteAsJsonAsync(item);
 });
+
+app.MapPost("/todos", async (HttpContext http, TodoService service) =>
+{       
+    var dto = await http.Request.ReadFromJsonAsync<TodoDto>();
+
+    var item = await service.CreateAsync(dto);
+
+    await http.Response.WriteAsJsonAsync(item);
+}); 
+
+app.MapPut("/todos/{id}", async (HttpContext http, TodoService service) =>
+{
+    http.Request.RouteValues.TryGetValue("id", out var id);
+    var dto = await http.Request.ReadFromJsonAsync<TodoDto>();
+
+    var item = await service.UpdateAsync(id.ToString(), dto);  
+
+    await http.Response.WriteAsJsonAsync(item);
+});
+
+app.MapDelete("/todos/{id}", async (HttpContext http, TodoService service) =>
+{
+    http.Request.RouteValues.TryGetValue("id", out var id);
+
+    await service.RemoveAsync(id.ToString());  
+
+    http.Response.StatusCode = 204;
+});
+
+app.MapPut("/todos/mark-as-done/{id}", async (HttpContext http, TodoService service) =>
+{
+    http.Request.RouteValues.TryGetValue("id", out var id);
+    var item = await service.MarkAsDoneAsync(id.ToString());  
+
+    await http.Response.WriteAsJsonAsync(item);
+});
+
 app.Run();

@@ -9,11 +9,11 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//Swagger
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//Dependencies
+// Dependencies
 builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("db"));
 builder.Services.AddScoped<TodoService>();
 
@@ -29,55 +29,36 @@ app.UseSwaggerUI();
 
 app.MapGet("/", () => "Hello Minimal API!");
 
-app.MapGet("/todos", async (HttpContext http, TodoService service) =>
+app.MapGet("/todos", (TodoService service) =>
 {
-    var items = await service.GetAllAsync();
-
-    await http.Response.WriteAsJsonAsync(items);
+    reutrn service.GetAllAsync();
 });
 
-app.MapGet("/todos/{id}", async (HttpContext http, TodoService service) =>
+app.MapGet("/todos/{id}", (string id, TodoService service) =>
 {
-    http.Request.RouteValues.TryGetValue("id", out var id);
-    var item = await service.GetByIdAsync(id.ToString());  
-
-    await http.Response.WriteAsJsonAsync(item);
+    return service.GetByIdAsync(id);
 });
 
-app.MapPost("/todos", async (HttpContext http, TodoService service) =>
+app.MapPost("/todos", (TodoDto dto, TodoService service) =>
 {       
-    var dto = await http.Request.ReadFromJsonAsync<TodoDto>();
-
-    var item = await service.CreateAsync(dto);
-
-    await http.Response.WriteAsJsonAsync(item);
+    return service.CreateAsync(dto);
 }); 
 
-app.MapPut("/todos/{id}", async (HttpContext http, TodoService service) =>
+app.MapPut("/todos/{id}", (string id, TodoDto dto, TodoService service) =>
 {
-    http.Request.RouteValues.TryGetValue("id", out var id);
-    var dto = await http.Request.ReadFromJsonAsync<TodoDto>();
-
-    var item = await service.UpdateAsync(id.ToString(), dto);  
-
-    await http.Response.WriteAsJsonAsync(item);
+    return service.UpdateAsync(id, dto);
 });
 
-app.MapDelete("/todos/{id}", async (HttpContext http, TodoService service) =>
+app.MapDelete("/todos/{id}", async (string id, TodoService service) =>
 {
-    http.Request.RouteValues.TryGetValue("id", out var id);
+    await service.RemoveAsync(id);
 
-    await service.RemoveAsync(id.ToString());  
-
-    http.Response.StatusCode = 204;
+    return Results.NoContent();
 });
 
-app.MapPut("/todos/mark-as-done/{id}", async (HttpContext http, TodoService service) =>
+app.MapPut("/todos/mark-as-done/{id}", (string id, TodoService service) =>
 {
-    http.Request.RouteValues.TryGetValue("id", out var id);
-    var item = await service.MarkAsDoneAsync(id.ToString());  
-
-    await http.Response.WriteAsJsonAsync(item);
+    return service.MarkAsDoneAsync(id);
 });
 
 app.Run();
